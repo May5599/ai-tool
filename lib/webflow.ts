@@ -81,6 +81,7 @@ function generateSlug(title: string): string {
     .replace(/[^a-z0-9\s]/g, '')
     .trim()
     .replace(/\s+/g, '-')
+    .replace(/-{2,}/g, '-')
     .slice(0, 60)
   return `${base}-${Date.now()}`
 }
