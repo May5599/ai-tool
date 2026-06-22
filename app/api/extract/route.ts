@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { extractJobs } from '@/lib/openai'
 
-export const maxDuration = 60 // allow up to 60s for large PDFs
+export const maxDuration = 300 // allow up to 5 min for large PDFs
 
 export async function POST(req: NextRequest) {
   try {

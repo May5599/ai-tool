@@ -83,6 +83,7 @@ function generateSlug(title: string): string {
     .replace(/\s+/g, '-')
     .replace(/-{2,}/g, '-')
     .slice(0, 60)
+    .replace(/-+$/, '')
   return `${base}-${Date.now()}`
 }
 
@@ -203,7 +204,12 @@ export async function publishJob(
 
   // Optional plain text fields
   if (job.location) fieldData['location'] = job.location
-  if (job.salary) fieldData['salary'] = job.salary
+  if (job.salary) {
+    // Extract the first dollar-amount from strings like "Starting at $90,272" or "$94,806 - $178,256"
+    const salaryMatch = job.salary.match(/\$[\d,]+(?:\s*[-–]\s*\$[\d,]+)?(?:\/\w+)?/)
+    const cleanSalary = salaryMatch ? salaryMatch[0] : job.salary
+    fieldData['salary'] = cleanSalary
+  }
   if (job.summary) fieldData['job-excerpt'] = job.summary
 
   // Schema.org JSON-LD for Google for Jobs.
@@ -236,11 +242,15 @@ export async function publishJob(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))
+    console.error('[webflow] API error response:', JSON.stringify(error, null, 2))
+    console.error('[webflow] fieldData sent:', JSON.stringify(fieldData, null, 2))
     const details = (error as { details?: unknown[] }).details
+    const errors = (error as { errors?: unknown[] }).errors
     const message =
       (error as { message?: string }).message ||
       `Webflow API error: ${response.status}`
-    throw new Error(details ? `${message} — ${JSON.stringify(details)}` : message)
+    const extra = details ?? errors
+    throw new Error(extra ? `${message} — ${JSON.stringify(extra)}` : message)
   }
 
   const item = await response.json()
